@@ -86,7 +86,7 @@ template<number_t N>
 struct detail
 {
     template<typename Iter>
-    inline static void convert(number_t x, Iter iter)
+    inline static Iter convert(number_t x, Iter iter)
     {
         if (N > x)
             return detail<N / 10u>::convert(x, iter);
@@ -94,16 +94,16 @@ struct detail
     }
     
     template<typename Iter>
-    inline static void convert_step(number_t x, Iter iter)
+    inline static Iter convert_step(number_t x, Iter iter)
     {
         if (N > x)
         {
-            *iter = '0';
-            return detail<N / 10u>::convert_step(x, ++iter);
+            *iter++ = '0';
+            return detail<N / 10u>::convert_step(x, iter);
         }
-        number_t const w = x / N;
-        *iter = static_cast<char>('0' + w);
-        return detail<N / 10u>::convert_step(x - w * N, ++iter);
+        auto const w = x / N;
+        *iter++ = static_cast<char>('0' + w);
+        return detail<N / 10u>::convert_step(x - w * N, iter);
     }
 };
 
@@ -111,21 +111,21 @@ template<>
 struct detail<1u>
 {
     template<typename Iter>
-    inline static void convert(number_t x, Iter iter)
+    inline static Iter convert(number_t x, Iter iter)
     {
         return convert_step(x, iter);
     }
         
     template<typename Iter>
-    inline static void convert_step(number_t x, Iter iter)
+    inline static Iter convert_step(number_t x, Iter iter)
     {
         *iter++ = static_cast<char>('0' + x);
-        *iter = 0;
+        return iter;
     }
 };
 
 template<typename FromT, typename T, typename Iter>
-inline void convert_from(T x, Iter iter)
+inline Iter convert_from(T x, Iter iter)
 {
     if (x <= std::numeric_limits<FromT>::max())
         return detail<max_divider<FromT>::value>::convert(x, iter);
@@ -136,7 +136,7 @@ template<typename T, typename Enable=void>
 struct converter
 {
     template<typename Iter>
-    inline static void run(T x, Iter iter)
+    inline static Iter run(T x, Iter iter)
     {
         return convert_from<unsigned char>(x, iter);
     }
@@ -148,7 +148,7 @@ struct converter<T, typename std::enable_if<std::is_signed<T>::value>::type>
     typedef typename std::make_unsigned<T>::type U;
     
     template<typename Iter>
-    inline static void run(T x, Iter iter)
+    inline static Iter run(T x, Iter iter)
     {
         if (x < 0)
         {
@@ -162,12 +162,20 @@ struct converter<T, typename std::enable_if<std::is_signed<T>::value>::type>
 } // namespace impl
 
 template<typename T, typename Iter>
-inline void convert(T x, Iter iter)
+inline Iter convert(T x, Iter iter)
 {    
     static_assert(std::is_integral<T>::value, "T must be integral type");
     return impl::converter<
         typename std::remove_reference<
             typename std::remove_cv<T>::type>::type>::run(x, iter);
+}
+
+template<typename T, typename Iter>
+inline Iter convert_with_zero(T x, Iter iter)
+{    
+    iter = convert(x, iter);
+    *iter++ = 0;
+    return iter;
 }
 
 } // namespace int2str

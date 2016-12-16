@@ -9,8 +9,9 @@
 #include <typeinfo>
 #include <random>
 #include "int2str.hpp"
-#ifdef BOOST_LEXICAL_CAST
+#ifdef USE_BOOST
 #include <boost/lexical_cast.hpp>
+#include <boost/spirit/include/karma.hpp>
 #endif
 
 template<typename Duration>
@@ -105,7 +106,7 @@ void StdStringStreamWithRewind()
     PROFILING_END()
 }
 
-#ifdef BOOST_LEXICAL_CAST
+#ifdef USE_BOOST
 
 void BoostLexicalCastOnStack()
 {
@@ -121,6 +122,27 @@ void BoostLexicalCastOnStack()
     typedef std::array<char, 64> buf_t;
     PROFILING_BEGIN(T, "boost::lexical_cast on stack")
     buf_t buf = boost::lexical_cast<buf_t>(i);
+    PROFILING_END()
+}
+
+void SpiritKarma()
+{
+    char buf[64];
+    RANDOM_PROFILING_BEGIN("spirit karma")
+    char *beg = buf;
+    boost::spirit::karma::generate(beg, boost::spirit::karma::auto_, i);
+    *beg = 0;
+    RANDOM_PROFILING_END()
+}
+
+template<typename T>
+void SpiritKarma()
+{
+    char buf[64];
+    PROFILING_BEGIN(T, "spirit karma")
+    char *beg = buf;
+    boost::spirit::karma::generate(beg, boost::spirit::karma::auto_, i);
+    *beg = 0;
     PROFILING_END()
 }
 
@@ -178,7 +200,7 @@ void Int2StrConvert()
     char buf[64];
 #endif
     RANDOM_PROFILING_BEGIN("int2str::convert")
-    int2str::convert(i, buf);
+    int2str::convert_with_zero(i, buf);
     RANDOM_PROFILING_END()
 }
 
@@ -191,7 +213,7 @@ void Int2StrConvert()
     char buf[64];
 #endif
     PROFILING_BEGIN(T, "int2str::convert")
-    int2str::convert(i, buf);
+    int2str::convert_with_zero(i, buf);
     PROFILING_END()
 }
 
@@ -210,8 +232,9 @@ struct PerfomanceTester<T, typename std::enable_if<sizeof(T) <= 4u>::type>
     static void Test()
     {
         Int2StrConvert<T>();
-#ifdef BOOST_LEXICAL_CAST
+#ifdef USE_BOOST
         BoostLexicalCastOnStack<T>();
+        SpiritKarma<T>();
 #endif
         StdSprintf<T>();
         StdStringStreamWithRewind<T>();
@@ -262,10 +285,10 @@ struct FunctionalTester
         TestWatcher<T> const tw;
         char buf1[64];
         char buf2[64];
-        int2str::convert(std::numeric_limits<T>::min(), buf1);
+        int2str::convert_with_zero(std::numeric_limits<T>::min(), buf1);
         sprintf(buf2, PrintfFormat<T>(), std::numeric_limits<T>::min());
         StrcmpAndExit(buf1, buf2);
-        int2str::convert(std::numeric_limits<T>::max(), buf1);
+        int2str::convert_with_zero(std::numeric_limits<T>::max(), buf1);
         sprintf(buf2, PrintfFormat<T>(), std::numeric_limits<T>::max());
         StrcmpAndExit(buf1, buf2);
     }
@@ -283,8 +306,8 @@ struct FunctionalTester<T, typename std::enable_if<sizeof(T) <= 4u>::type>
         T const imax = std::numeric_limits<T>::max();
         for (T i = imin; i < imax; ++i)
         {
-            int2str::convert(i, buf1.data());
-#ifdef BOOST_LEXICAL_CAST
+            int2str::convert_with_zero(i, buf1.data());
+#ifdef USE_BOOST
             buf_t buf2 = boost::lexical_cast<buf_t>(i);
 #else
             buf_t buf2;
@@ -312,8 +335,9 @@ void TestPerfomanceRandom()
 {
     std::cout << "Test Perfomance Random" << std::endl;
     Int2StrConvert();
-#ifdef BOOST_LEXICAL_CAST
+#ifdef USE_BOOST
     BoostLexicalCastOnStack();
+    SpiritKarma();
 #endif
     StdSprintf();
     StdStringStreamWithRewind();

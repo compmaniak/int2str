@@ -10,14 +10,10 @@ else()
     set(CMAKE_CXX_FLAGS_RELEASE "-Wall -Wextra -O3")
 endif()
 
-if (TESTS_WITH_HEAP_USAGE)
-    add_definitions(-DTESTS_WITH_HEAP_USAGE)
-endif()
-
 find_package(Boost)
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
-    add_definitions(-DBOOST_LEXICAL_CAST)
+    add_definitions(-DUSE_BOOST)
 endif()
 
 add_executable(tester tester.cpp)
