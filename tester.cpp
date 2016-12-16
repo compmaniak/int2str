@@ -85,6 +85,23 @@ private:
     std::cout << std::fixed << std::setprecision(3) << _result.count() << "s" << std::endl; \
 }
 
+void NoAction()
+{
+    static volatile int dummy;
+    RANDOM_PROFILING_BEGIN("no action")
+    dummy = i; // avoid loop optimization
+    RANDOM_PROFILING_END()
+}
+
+template<typename T>
+void NoAction()
+{
+    static volatile T dummy;
+    PROFILING_BEGIN(T, "no action")
+    dummy = i; // avoid loop optimization
+    PROFILING_END()
+}
+
 void StdStringStreamWithRewind()
 {
     std::stringstream ss;
@@ -231,6 +248,7 @@ struct PerfomanceTester<T, typename std::enable_if<sizeof(T) <= 4u>::type>
 {
     static void Test()
     {
+        NoAction<T>();
         Int2StrConvert<T>();
 #ifdef USE_BOOST
         BoostLexicalCastOnStack<T>();
@@ -334,6 +352,7 @@ void TestFunctional()
 void TestPerfomanceRandom()
 {
     std::cout << "Test Perfomance Random" << std::endl;
+    NoAction();
     Int2StrConvert();
 #ifdef USE_BOOST
     BoostLexicalCastOnStack();
