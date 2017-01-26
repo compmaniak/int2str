@@ -11,39 +11,14 @@ namespace impl
 
 typedef unsigned long long number_t;
 
-template<size_t N>
-constexpr number_t get_max_divider();
-
-template<>
-constexpr number_t get_max_divider<1u>()
-{
-    return 100u;
-}
-
-template<>
-constexpr number_t get_max_divider<2u>()
-{
-    return 10000u;
-}
-
-template<>
-constexpr number_t get_max_divider<4u>()
-{
-    return 1000000000u;
-}
-
-template<>
-constexpr number_t get_max_divider<8u>()
-{
-    return 10000000000000000000u;
-}
-
-template<typename T>
+template<typename T, number_t N=100u>
 struct max_divider
 {
     enum: number_t
     {
-        value = get_max_divider<sizeof(T)>()
+        value = std::conditional<(std::numeric_limits<T>::max() / N <= 9u),
+                std::integral_constant<number_t, N>,
+                max_divider<T, N * 10u>>::type::value
     };
 };
 
