@@ -11,16 +11,11 @@ namespace impl
 
 typedef unsigned long long number_t;
 
-template<typename T, number_t N=100u>
-struct max_divider
+template<typename T>
+constexpr number_t get_max_divider(number_t n = 1)
 {
-    enum: number_t
-    {
-        value = std::conditional<(std::numeric_limits<T>::max() / N <= 9u),
-                std::integral_constant<number_t, N>,
-                max_divider<T, N * 10u>>::type::value
-    };
-};
+    return (std::numeric_limits<T>::max() / n <= 9 ? n : get_max_divider<T>(n * 10));
+}
 
 template<typename T>
 struct next_type;
@@ -104,7 +99,7 @@ template<typename FromT, typename T, typename Iter>
 inline Iter convert_from(T x, Iter iter)
 {
     if (x <= std::numeric_limits<FromT>::max())
-        return detail<max_divider<FromT>::value>::convert(x, iter);
+        return detail<get_max_divider<FromT>()>::convert(x, iter);
     return convert_from<typename next_type<FromT>::type>(x, iter);
 }
 
@@ -121,11 +116,10 @@ struct converter
 template<typename T>
 struct converter<T, typename std::enable_if<std::is_signed<T>::value>::type>
 {
-    typedef typename std::make_unsigned<T>::type U;
-    
     template<typename Iter>
     inline static Iter run(T x, Iter iter)
     {
+        using U = typename std::make_unsigned<T>::type;
         if (x < 0)
         {
             *iter++ = '-';
