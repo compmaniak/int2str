@@ -95,7 +95,7 @@ struct detail<1u>
     }
 };
 
-template<typename FromT, typename T, typename Iter>
+template<typename FromT=unsigned char, typename T, typename Iter>
 inline Iter convert_from(T x, Iter iter)
 {
     if (x <= std::numeric_limits<FromT>::max())
@@ -109,7 +109,7 @@ struct converter
     template<typename Iter>
     inline static Iter run(T x, Iter iter)
     {
-        return convert_from<unsigned char>(x, iter);
+        return convert_from(x, iter);
     }
 };
 
@@ -123,9 +123,9 @@ struct converter<T, typename std::enable_if<std::is_signed<T>::value>::type>
         if (x < 0)
         {
             *iter++ = '-';
-            return convert_from<unsigned char>(static_cast<U>(-x), iter);
+            return convert_from(static_cast<U>(-x), iter);
         }
-        return convert_from<unsigned char>(static_cast<U>(x), iter);
+        return convert_from(static_cast<U>(x), iter);
     }
 };
 
