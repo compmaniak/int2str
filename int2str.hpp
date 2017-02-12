@@ -18,7 +18,10 @@ constexpr number_t get_max_divider(number_t n = 1)
 }
 
 template<typename T>
-struct next_type;
+struct next_type
+{
+    typedef unsigned long long type;
+};
 
 template<>
 struct next_type<unsigned char>
@@ -39,18 +42,6 @@ struct next_type<unsigned int>
         sizeof(unsigned long) > sizeof(unsigned int)), 
         unsigned long, 
         unsigned long long>::type type;
-};
-
-template<>
-struct next_type<unsigned long>
-{
-    typedef unsigned long long type;
-};
-
-template<>
-struct next_type<unsigned long long>
-{
-    typedef unsigned long long type;
 };
 
 template<number_t N>
@@ -135,9 +126,7 @@ template<typename T, typename Iter>
 inline Iter convert(T x, Iter iter)
 {    
     static_assert(std::is_integral<T>::value, "T must be integral type");
-    return impl::converter<
-        typename std::remove_reference<
-            typename std::remove_cv<T>::type>::type>::run(x, iter);
+    return impl::converter<typename std::decay<T>::type>::run(x, iter);
 }
 
 template<typename T, typename Iter>
